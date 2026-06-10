@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Avery — Product Manager & Designer</title>
+  <link rel="icon" type="image/png" href="assets/avery-logo.png" />
+  <meta name="description" content="Avery — Product manager and designer with experience in early stage 0 to 1 startups, fintech, and web3." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;700&family=Syne+Mono&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* ---- Horizontal swipe gallery (slider variant) ----
+       A normal horizontally-scrollable strip with scroll-snap; the next
+       image peeks on the right so it's clear there's more to scroll. */
+    .hscroll {
+      margin-top: 24px;
+      display: flex;
+      gap: 20px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .hscroll::-webkit-scrollbar {
+      display: none;
+    }
+    .hscroll-item {
+      flex: 0 0 86%;
+      min-width: 0;
+      scroll-snap-align: start;
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      aspect-ratio: 16 / 9;
+    }
+    .hscroll-item img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+    .hscroll-item:hover img {
+      transform: scale(1.03);
+    }
+    .hscroll.dragging .hscroll-item:hover img {
+      transform: none;
+    }
+    .hscroll-item img.dark {
+      background: #000000;
+    }
+
+    /* subtle warm lift on the CTA, matching the sidebar card shadow */
+    .book-call {
+      transition: background 0.18s ease, box-shadow 0.3s ease;
+    }
+    .book-call:hover {
+      box-shadow: 0 6px 22px rgba(59, 44, 7, 0.1);
+    }
+
+    .hscroll {
+      cursor: grab;
+    }
+    .hscroll.dragging {
+      cursor: grabbing;
+      scroll-snap-type: none;
+      scroll-behavior: auto;
+      user-select: none;
+    }
+    .hscroll.dragging img {
+      pointer-events: none;
+    }
+
+    /* arrow controls */
+    .gallery {
+      position: relative;
+    }
+    .gallery-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      color: #000;
+      opacity: 0.92;
+      transition: opacity 0.25s ease, background 0.2s ease;
+      z-index: 2;
+    }
+    .gallery-nav:hover {
+      opacity: 1;
+      background: #ffffff;
+    }
+    .gallery-nav:disabled {
+      opacity: 0 !important;
+      pointer-events: none;
+    }
+    .gallery-nav.prev {
+      left: 14px;
+    }
+    .gallery-nav.next {
+      right: 14px;
+    }
+
+    /* ---- Entrance + scroll-reveal animations ---- */
+    .reveal-left,
+    .reveal-up {
+      opacity: 0;
+      transition: opacity 1.2s ease, transform 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+      will-change: opacity, transform;
+    }
+    .reveal-left {
+      transform: translateX(-48px);
+    }
+    .reveal-up {
+      transform: translateY(30px);
+    }
+    .reveal-left.in,
+    .reveal-up.in {
+      opacity: 1;
+      transform: none;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal-left,
+      .reveal-up {
+        opacity: 1;
+        transform: none;
+        transition: none;
+      }
+    }
+
+    /* ---- PFP photo swap + Degen toggle ---- */
+    .pfp-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    .pfp {
+      position: relative;
+      width: 120px;
+      height: 120px;
+    }
+    .pfp-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      transition: opacity 0.5s ease;
+    }
+    .pfp-dark {
+      opacity: 0;
+    }
+    .degen-toggle {
+      padding: 7px 18px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 999px;
+      border: 1px solid var(--subtle-border);
+      background: var(--subtle-fill);
+      color: var(--ink);
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    .degen-toggle:hover {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    /* smooth theme crossfade */
+    body,
+    .sidebar,
+    .degen-toggle,
+    .emoji-badge {
+      transition: background-color 0.45s ease, border-color 0.45s ease,
+        color 0.45s ease;
+    }
+
+    /* ---- Degen (dark) theme ---- */
+    body.degen {
+      --bg: #141210;
+      --ink: #f3efe8;
+      --card: rgba(255, 255, 255, 0.04);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --hairline: rgba(255, 255, 255, 0.1);
+      --subtle-fill: rgba(255, 255, 255, 0.05);
+      --subtle-border: rgba(255, 255, 255, 0.18);
+    }
+    body.degen .bio,
+    body.degen .vibe-list,
+    body.degen .body {
+      color: rgba(243, 239, 232, 0.72);
+    }
+    body.degen .social {
+      color: rgba(243, 239, 232, 0.5);
+    }
+    body.degen .social:hover {
+      color: #ffffff;
+    }
+    body.degen .degen-toggle:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    body.degen .emoji-badge {
+      background: rgba(255, 255, 255, 0.06);
+    }
+    body.degen .book-call:hover {
+      box-shadow: 0 8px 28px rgba(255, 255, 255, 0.12);
+    }
+    body.degen .pfp-light {
+      opacity: 0;
+    }
+    body.degen .pfp-dark {
+      opacity: 1;
+    }
+    /* CTA gradient stroke must be light on a dark background */
+    body.degen .book-call::before {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.35));
+    }
+    body.degen .book-call::after {
+      background: linear-gradient(0deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.35));
+    }
+
+    /* ---- View tabs (Work Experience / More Projects) ---- */
+    .view-tabs {
+      position: fixed;
+      top: 24px;
+      right: max(24px, calc((100vw - 1392px) / 2 + 24px));
+      z-index: 100;
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 4px 24px rgba(59, 44, 7, 0.06);
+    }
+    .view-tab {
+      position: relative;
+      z-index: 1;
+      padding: 9px 18px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(0, 0, 0, 0.45);
+      border-radius: 999px;
+      transition: color 0.25s ease;
+    }
+    .view-tab.active {
+      color: var(--bg);
+    }
+    body.degen .view-tab {
+      color: rgba(243, 239, 232, 0.5);
+    }
+    body.degen .view-tab.active {
+      color: var(--bg);
+    }
+    body.degen .tab-pill {
+      background: #f0eee9;
+    }
+    .tab-pill {
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      left: 0;
+      width: 0;
+      border-radius: 999px;
+      background: var(--ink);
+      z-index: 0;
+      transition: transform 0.4s cubic-bezier(0.65, 0, 0.35, 1),
+        width 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+    }
+
+    /* ---- Sliding views ---- */
+    body {
+      overflow-x: clip;
+    }
+    .main-view {
+      transition: transform 0.65s cubic-bezier(0.7, 0, 0.25, 1);
+      will-change: transform;
+    }
+    body.show-projects .main-view {
+      transform: translateX(-100%);
+    }
+    .projects-view {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      overflow-y: auto;
+      background: var(--bg);
+      transform: translateX(100%);
+      transition: transform 0.65s cubic-bezier(0.7, 0, 0.25, 1),
+        background-color 0.45s ease;
+      will-change: transform;
+    }
+    body.show-projects .projects-view {
+      transform: translateX(0);
+    }
+
+    .projects-inner {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 104px 32px 72px;
+    }
+    .projects-title {
+      font-family: var(--font-display);
+      font-size: 32px;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      margin-bottom: 28px;
+    }
+    .projects-grid {
+      columns: 2;
+      column-gap: 20px;
+    }
+    .project-card {
+      break-inside: avoid;
+      margin: 0 0 20px;
+      border-radius: var(--radius-card);
+      overflow: hidden;
+    }
+    .project-card img {
+      width: 100%;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+    .project-card:hover img {
+      transform: scale(1.04);
+    }
+    @media (max-width: 640px) {
+      .projects-grid {
+        columns: 1;
+      }
+      .projects-inner {
+        padding: 96px 18px 56px;
+      }
+    }
+
+    /* mobile back-to-work control inside the projects view */
+    .projects-back {
+      display: none;
+      margin-bottom: 18px;
+      padding: 9px 16px;
+      border: 1px solid var(--card-border);
+      background: var(--card);
+      border-radius: 999px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    /* tablet / mobile: tabs sit in-flow right above the PRESENT section */
+    @media (max-width: 980px) {
+      .view-tabs {
+        position: static;
+        align-self: flex-end;
+        margin-bottom: -56px; /* counteract the content column's 72px gap */
+        box-shadow: none;
+      }
+      .projects-inner {
+        padding-top: 32px;
+      }
+      .projects-back {
+        display: inline-block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="preloader" aria-hidden="true">
+    <img class="preloader-logo" src="assets/avery-logo.png" alt="" />
+  </div>
+
+  <nav class="view-tabs" aria-label="View switcher">
+    <span class="tab-pill" data-pill></span>
+    <button class="view-tab active" data-view="work">Work Experience</button>
+    <button class="view-tab" data-view="projects">More Projects</button>
+  </nav>
+
+  <div class="main-view">
+  <div class="layout">
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="sidebar reveal-left">
+      <div class="pfp-block">
+        <div class="pfp">
+          <img class="pfp-img pfp-light" src="assets/avery.png" alt="Portrait of Avery" />
+          <img class="pfp-img pfp-dark" src="assets/bayc-2219.png" alt="Avery's BAYC #2219" />
+        </div>
+        <button class="degen-toggle" data-degen aria-pressed="false">Degen mode</button>
+      </div>
+
+      <div class="intro">
+        <h1 class="display">Hi, I&rsquo;m Avery!</h1>
+        <p class="bio">
+          Product manager and designer with experience in early stage 0 to 1
+          startups, fintech, and web3.
+        </p>
+      </div>
+
+      <div class="vibe">
+        <h2 class="display">What&rsquo;s my vibe?</h2>
+        <ul class="vibe-list">
+          <li>/ Ideas guy who loves to build cool shit</li>
+          <li>/ A problem solver who thinks in systems</li>
+          <li>/ Strong attention to detail</li>
+          <li>/ Degen</li>
+          <li>/ Health maxi</li>
+          <li>/ Pour over lover</li>
+          <li>/ Pickleball addict</li>
+        </ul>
+      </div>
+
+      <div class="sidebar-footer">
+        <nav class="socials" aria-label="Social links">
+          <a href="https://x.com/metapixels" class="social" target="_blank" rel="noopener">X</a>
+          <a href="https://www.linkedin.com/in/avery-spencer-ba5936122" class="social" target="_blank" rel="noopener">LinkedIn</a>
+          <a href="https://t.me/asgs96" class="social" target="_blank" rel="noopener">Telegram</a>
+        </nav>
+
+        <a class="book-call" href="#" target="_blank" rel="noopener">Book a call</a>
+      </div>
+    </aside>
+
+    <!-- ============ MAIN ============ -->
+    <main class="content">
+      <!-- PRESENT -->
+      <section class="block">
+        <p class="section-label reveal-up">PRESENT</p>
+        <div class="present reveal-up">
+          <div class="emoji-badge" aria-hidden="true">🤓</div>
+          <div class="present-text">
+            <h3 class="entry-title">AI Skillsmaxxing</h3>
+            <p class="body">
+              Currently nerding out and skillsmaxxing on AI. Playing around with
+              the AI tools out there to supercharge my workflow. Some work
+              I&rsquo;ve been doing with the tools.
+            </p>
+            <div class="app-demos">
+              <div class="app-demo">
+                <video src="assets/qr-app.mp4" autoplay muted loop playsinline></video>
+              </div>
+              <div class="app-demo">
+                <video src="assets/restaurant-app.mp4" autoplay muted loop playsinline></video>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAST WORK -->
+      <section class="block">
+        <p class="section-label reveal-up">PAST WORK</p>
+
+        <!-- Featured: Shards Protocol -->
+        <article class="entry featured reveal-up">
+          <img class="entry-logo" src="assets/shards.png" alt="Shards Protocol logo" />
+          <div class="entry-body">
+            <header class="entry-head">
+              <h3 class="entry-title">Shards Protocol</h3>
+              <span class="entry-role">Co-founder, Chief Product Officer</span>
+            </header>
+            <p class="body">
+              Led the product development for a web3 gaming SDK for tokenization
+              of in-game guilds. Generated over 500k users, and $1M in trading
+              volume. Raised $2M.
+            </p>
+            <p class="body">
+              Led strategy and execution of RewardsHQ (Telegram rewards app, 800k
+              users, 100k MAU) and Aura (web app and browser extension for AI
+              onchain wallet analysis and rewards discovery).
+            </p>
+            <div class="gallery" data-gallery>
+              <div class="hscroll" data-strip>
+                <div class="hscroll-item">
+                  <img class="dark" src="assets/shards_visual.png" alt="Shards — guild marketplace" />
+                </div>
+                <div class="hscroll-item">
+                  <img src="assets/rewardshq-visual.png" alt="RewardsHQ — Telegram rewards app" />
+                </div>
+                <div class="hscroll-item">
+                  <img src="assets/aura_visual.png" alt="Aura — onchain wallet analysis app" />
+                </div>
+                <div class="hscroll-item">
+                  <img class="dark" src="assets/aurabadges.png" alt="Aura — Soulbound Badges" />
+                </div>
+              </div>
+              <button class="gallery-nav prev" data-prev aria-label="Previous image">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              </button>
+              <button class="gallery-nav next" data-next aria-label="Next image">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <!-- Remaining roles -->
+        <article class="entry reveal-up">
+          <img class="entry-logo" src="assets/mirai.png" alt="Mirai Labs logo" />
+          <div class="entry-body">
+            <header class="entry-head">
+              <h3 class="entry-title">Mirai Labs</h3>
+              <span class="entry-role">Head of Product</span>
+            </header>
+            <p class="body">
+              Led the product development for staking products, and contributed in
+              early-stage designs for Mirai web3 wallet.
+            </p>
+            <div class="visuals">
+              <div class="visual"><img src="assets/miraiwallet.png" alt="Mirai Wallet app" /></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="entry reveal-up">
+          <img class="entry-logo" src="assets/eden.png" alt="ED3N Ventures logo" />
+          <div class="entry-body">
+            <header class="entry-head">
+              <h3 class="entry-title">ED3N Ventures</h3>
+              <span class="entry-role">Venture Lead</span>
+            </header>
+            <p class="body">
+              Co-founded and led product strategy and design across a portfolio of
+              e-commerce and Web3 startups including BreederDAO, Playfriends, and
+              Metacare, collectively raising $30M.
+            </p>
+            <div class="gallery" data-gallery>
+              <div class="hscroll" data-strip>
+                <div class="hscroll-item">
+                  <img src="assets/ogd.png" alt="OpenGameDAO" />
+                </div>
+                <div class="hscroll-item">
+                  <img src="assets/playcore.png" alt="PlayCore" />
+                </div>
+                <div class="hscroll-item">
+                  <img src="assets/peoples-telco.png" alt="People's Telco" />
+                </div>
+              </div>
+              <button class="gallery-nav prev" data-prev aria-label="Previous image">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              </button>
+              <button class="gallery-nav next" data-next aria-label="Next image">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <article class="entry reveal-up">
+          <img class="entry-logo" src="assets/healthmart.png" alt="Healthmart.ph logo" />
+          <div class="entry-body">
+            <header class="entry-head">
+              <h3 class="entry-title">Healthmart.ph</h3>
+              <span class="entry-role">Co-founder</span>
+            </header>
+            <p class="body">
+              Shopify-based vitamins and supplements marketplace. Contributed to
+              overall strategy, design, and marketing, driving peak annual sales to
+              $500k. Exited at an undisclosed amount to Metacare.
+            </p>
+          </div>
+        </article>
+
+        <article class="entry reveal-up">
+          <img class="entry-logo" src="assets/gcash.png" alt="GCash logo" />
+          <div class="entry-body">
+            <header class="entry-head">
+              <h3 class="entry-title">GCash</h3>
+              <span class="entry-role">UI / UX Designer</span>
+            </header>
+            <p class="body">
+              Worked on major initiatives including the viral Christmas promo (700k+
+              MAU growth), onboarding optimization (20&rarr;50% activation), app
+              rebrand, design system creation, and financial services products.
+            </p>
+            <div class="gallery" data-gallery>
+              <div class="hscroll" data-strip>
+                <div class="hscroll-item">
+                  <img src="assets/gsave.png" alt="GSave" />
+                </div>
+                <div class="hscroll-item">
+                  <img src="assets/design-system.png" alt="GCash Design System" />
+                </div>
+              </div>
+              <button class="gallery-nav prev" data-prev aria-label="Previous image">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              </button>
+              <button class="gallery-nav next" data-next aria-label="Next image">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+  </div>
+
+  <aside class="projects-view" aria-label="More projects">
+    <div class="projects-inner">
+      <button class="projects-back" data-view="work" aria-label="Back to work experience">&larr; Work Experience</button>
+      <h2 class="projects-title">More Projects</h2>
+      <div class="projects-grid">
+        <figure class="project-card"><img src="assets/shards-points.png" alt="Shards Points project" /></figure>
+        <figure class="project-card"><img src="assets/nft-street.png" alt="NFT Street project" /></figure>
+        <figure class="project-card"><img src="assets/playfriends.png" alt="Playfriends project" /></figure>
+        <figure class="project-card"><img src="assets/ai-tool.png" alt="AI Tool project" /></figure>
+        <figure class="project-card"><img src="assets/pf-mobile.png" alt="Playfriends mobile project" /></figure>
+        <figure class="project-card"><img src="assets/call-center.png" alt="Call center project" /></figure>
+        <figure class="project-card"><img src="assets/fastbroker.png" alt="FastBroker project" /></figure>
+        <figure class="project-card"><img src="assets/onlinejobs.png" alt="OnlineJobs project" /></figure>
+        <figure class="project-card"><img src="assets/happyskin.png" alt="Happy Skin project" /></figure>
+        <figure class="project-card"><img src="assets/blk.png" alt="BLK project" /></figure>
+      </div>
+    </div>
+  </aside>
+
+  <script>
+    // ---- View tabs: Work Experience / More Projects ----
+    (function () {
+      var container = document.querySelector(".view-tabs");
+      var tabs = document.querySelectorAll("[data-view]");
+      var pill = document.querySelector("[data-pill]");
+      if (!tabs.length || !container) return;
+
+      function movePill() {
+        var active = container.querySelector(".view-tab.active");
+        if (!active || !pill) return;
+        var bl = parseFloat(getComputedStyle(container).borderLeftWidth) || 0;
+        var cb = container.getBoundingClientRect();
+        var ab = active.getBoundingClientRect();
+        pill.style.width = ab.width + "px";
+        pill.style.transform = "translateX(" + (ab.left - cb.left - bl) + "px)";
+      }
+
+      function setView(view) {
+        document.body.classList.toggle("show-projects", view === "projects");
+        tabs.forEach(function (t) {
+          t.classList.toggle("active", t.dataset.view === view);
+        });
+        movePill();
+      }
+
+      tabs.forEach(function (t) {
+        t.addEventListener("click", function () { setView(t.dataset.view); });
+      });
+
+      // On tablet/mobile, move the tab bar into the content flow (above PRESENT);
+      // on desktop, keep it as a fixed, body-level element so it persists across views.
+      var mainView = document.querySelector(".main-view");
+      var content = document.querySelector(".content");
+      var mq = window.matchMedia("(max-width: 980px)");
+      function placeTabs() {
+        if (mq.matches) {
+          if (content && container.parentNode !== content) {
+            content.insertBefore(container, content.firstChild);
+          }
+        } else if (mainView && container.parentNode === content) {
+          document.body.insertBefore(container, mainView);
+        }
+        movePill();
+      }
+      placeTabs();
+      if (mq.addEventListener) mq.addEventListener("change", placeTabs);
+      else mq.addListener(placeTabs);
+
+      window.addEventListener("resize", movePill);
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(movePill);
+      }
+    })();
+
+    // ---- Degen (dark) mode toggle ----
+    (function () {
+      var btn = document.querySelector("[data-degen]");
+      if (!btn) return;
+      function apply(on) {
+        document.body.classList.toggle("degen", on);
+        btn.textContent = on ? "Normie mode" : "Degen mode";
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      }
+      apply(localStorage.getItem("degen") === "1");
+      btn.addEventListener("click", function () {
+        var on = !document.body.classList.contains("degen");
+        apply(on);
+        localStorage.setItem("degen", on ? "1" : "0");
+      });
+    })();
+
+    // Reveal elements as they enter the viewport (and on initial load).
+    function setupReveal() {
+      var els = Array.prototype.slice.call(
+        document.querySelectorAll(".reveal-left, .reveal-up")
+      );
+      function reveal(el) { el.classList.add("in"); }
+
+      if (!("IntersectionObserver" in window)) {
+        els.forEach(reveal);
+        return;
+      }
+
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            reveal(e.target);
+            io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
+
+      els.forEach(function (el) {
+        // Reveal anything already on screen right away; observe the rest.
+        var r = el.getBoundingClientRect();
+        if (r.top < window.innerHeight * 0.92 && r.bottom > 0) {
+          reveal(el);
+        } else {
+          io.observe(el);
+        }
+      });
+    }
+
+    window.addEventListener("load", function () {
+      var p = document.getElementById("preloader");
+      if (!p) { setupReveal(); return; }
+      // brief minimum display so the logo is perceivable even on fast loads
+      setTimeout(function () {
+        p.classList.add("loaded");
+        setupReveal();
+        p.addEventListener("transitionend", function () {
+          p.remove();
+        }, { once: true });
+      }, 1500);
+    });
+
+    // ---- Gallery: drag-to-scroll + arrow buttons (supports multiple) ----
+    function initGallery(gallery) {
+      var strip = gallery.querySelector("[data-strip]");
+      if (!strip) return;
+
+      var prev = gallery.querySelector("[data-prev]");
+      var next = gallery.querySelector("[data-next]");
+
+      function step() {
+        var item = strip.querySelector(".hscroll-item");
+        var gap = parseFloat(getComputedStyle(strip).columnGap || getComputedStyle(strip).gap) || 0;
+        return item ? item.getBoundingClientRect().width + gap : strip.clientWidth;
+      }
+
+      function updateButtons() {
+        var maxScroll = strip.scrollWidth - strip.clientWidth - 1;
+        if (prev) prev.disabled = strip.scrollLeft <= 0;
+        if (next) next.disabled = strip.scrollLeft >= maxScroll;
+      }
+
+      if (prev) prev.addEventListener("click", function () {
+        strip.scrollBy({ left: -step(), behavior: "smooth" });
+      });
+      if (next) next.addEventListener("click", function () {
+        strip.scrollBy({ left: step(), behavior: "smooth" });
+      });
+
+      strip.addEventListener("scroll", updateButtons, { passive: true });
+      window.addEventListener("resize", updateButtons);
+      updateButtons();
+
+      // pointer drag-to-scroll
+      var down = false, startX = 0, startLeft = 0, moved = false;
+
+      strip.addEventListener("pointerdown", function (e) {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        down = true;
+        moved = false;
+        startX = e.clientX;
+        startLeft = strip.scrollLeft;
+        strip.setPointerCapture(e.pointerId);
+      });
+
+      strip.addEventListener("pointermove", function (e) {
+        if (!down) return;
+        var dx = e.clientX - startX;
+        if (Math.abs(dx) > 4 && !moved) {
+          moved = true;
+          strip.classList.add("dragging");
+        }
+        if (moved) strip.scrollLeft = startLeft - dx;
+      });
+
+      function endDrag(e) {
+        if (!down) return;
+        down = false;
+        strip.classList.remove("dragging");
+        try { strip.releasePointerCapture(e.pointerId); } catch (err) {}
+        // snap to nearest item after a free drag
+        if (moved) {
+          var s = step();
+          strip.scrollTo({ left: Math.round(strip.scrollLeft / s) * s, behavior: "smooth" });
+        }
+      }
+      strip.addEventListener("pointerup", endDrag);
+      strip.addEventListener("pointercancel", endDrag);
+    }
+
+    document.querySelectorAll("[data-gallery]").forEach(initGallery);
+  </script>
+</body>
+</html>
